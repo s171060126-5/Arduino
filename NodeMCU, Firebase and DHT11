@@ -5,12 +5,10 @@
 #include "FirebaseESP8266.h"  // Install Firebase ESP8266 library
 #include <ESP8266WiFi.h>
 
-
-#define FIREBASE_HOST "car-whiles-app.firebaseio.com"                   // Firebase Project URL goes here without "http:" , "\" and "/"
-#define FIREBASE_AUTH "ha08HOAVV5yAgBG9JwO1ATGkcnjLgXSF9vDQO5BM"       // Firebase Database Secret goes here
+#define FIREBASE_HOST "**************.firebaseio.com"                   // Firebase Project URL goes here without "http:" , "\" and "/"
+#define FIREBASE_AUTH "**************G9JwO1ATGkcnjLgXSF9vDQO5BM"       // Firebase Database Secret goes here
 #define WIFI_SSID "osamah"                                            // WiFi SSID for which yout NodeMCU connects
 #define WIFI_PASSWORD "123456789"                                    //Password of your wifi network 
-
 
 //MotrPins
 int IN1=D3;    //LeftForward
