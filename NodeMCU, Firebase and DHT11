@@ -1,47 +1,52 @@
-/* WELCOM MY NAME IS OSAMAH I HOPE THAT YOU ARE ENJOYING WITH MY CODE FOR MORE INFORMATION SEND ME AN EMAIL
+/* WELCOM MY NAME IS OSAMAH I HOPE THAT YOU ARE ENJOYING WITH the CODE FOR MORE INFORMATION SEND ME AN EMAIL
  EMAIL: OSAMAHAHMED1997@GMAIL.COM
  YOUTUBE:https://www.youtube.com/channel/UCkmoJWNZU3krOVC3Wu4CrTg?view_as=subscriber
 */
+/*
+   Created by Pi BOTS MakerHub
+
+   Email: pibotsmakerhub@gmail.com
+
+   Github: https://github.com/pibotsmakerhub
+
+   Copyright (c) 2020 Pi BOTS MakerHub
+*/
+
+
+//FirebaseESP8266.h must be included before ESP8266WiFi.h
 #include "FirebaseESP8266.h"  // Install Firebase ESP8266 library
 #include <ESP8266WiFi.h>
+#include <DHT.h>    // Install DHT11 Library and Adafruit Unified Sensor Library
 
-#define FIREBASE_HOST "**************.firebaseio.com"                   // Firebase Project URL goes here without "http:" , "\" and "/"
-#define FIREBASE_AUTH "**************G9JwO1ATGkcnjLgXSF9vDQO5BM"       // Firebase Database Secret goes here
-#define WIFI_SSID "osamah"                                            // WiFi SSID for which yout NodeMCU connects
-#define WIFI_PASSWORD "123456789"                                    //Password of your wifi network 
 
-//MotrPins
-int IN1=D3;    //LeftForward
-int IN2=D4;   //LeftBackward
-int IN3=D7;  //RightForward
-int IN4=D8; //RightBackward
-// Switch
-int Switch = D0;
-//Ultrasonic sensor
-const unsigned int Echo= D1;     
-const unsigned int Trig= D2;  
+#define FIREBASE_HOST "iot-ac-controller.firebaseio.com" //Without http:// or https:// schemes
+#define FIREBASE_AUTH "6DqWTDIiz3QvjM3duaIcLFVLwpp38LLe4Y9FPM7F"
+#define WIFI_SSID "MN4C1"
+#define WIFI_PASSWORD "kompmn4c1"
 
-FirebaseData Motor;         //Define FirebaseESP8266 data object
-//FirebaseData ACTVData;      //FirebaseData ACData
+#define DHTPIN 2    // Connect Data pin of DHT to D2
+int AC = D5;     // Connect LED to D5
+
+#define DHTTYPE    DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+//Define FirebaseESP8266 data object
+FirebaseData firebaseData;
+//FirebaseData ACData;
+FirebaseData ACTVData;
+
 FirebaseJson json;
 
 
 void setup()
 {
-  Serial.begin(9600); 
-  
-  pinMode(IN1, OUTPUT);
-  pinMode(IN2, OUTPUT);
-  pinMode(IN3, OUTPUT);
-  pinMode(IN4, OUTPUT);
-  
-  pinMode(Switch, OUTPUT);
 
-  pinMode(Trig, OUTPUT); 
-  pinMode(Echo, INPUT); 
-  Serial.println("Ultrasonic Sensor HC-SR04 Test"); 
+  Serial.begin(9600);
 
- WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  dht.begin();
+  pinMode(AC,OUTPUT);
+  
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting to Wi-Fi");
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -55,143 +60,112 @@ void setup()
 
   Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
   Firebase.reconnectWiFi(true);
-  
+
 }
 
+void sensorUpdate(){
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+ // // Read temperature as Fahrenheit (isFahrenheit = true)
+ // float f = dht.readTemperature(true);
+  float air = 87;
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t) || isnan(air)) {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return;
+  }
 
-/************************************************MOTOR FUNCTION*******************************************/
+  Serial.print(F("Humidity: "));
+  Serial.print(h);
+  Serial.print(F("%  Temperature: "));
+  Serial.print(t);
+  Serial.print(F("C  ,"));
+  Serial.print(air);
+  Serial.println(F("F  "));
 
-void Stop(void)   
-{
-  digitalWrite(IN1,LOW);
-  digitalWrite(IN2,LOW);
-  digitalWrite(IN3,LOW);
-  digitalWrite(IN4,LOW);
-}
-
-void Forward(void)   
-{
-  digitalWrite(IN1,HIGH);
-  digitalWrite(IN2,LOW);
-  digitalWrite(IN3,HIGH);
-  digitalWrite(IN4,LOW);
-}
-
-void Backward(void)   
-{
-  digitalWrite(IN1,LOW);
-  digitalWrite(IN2,HIGH);
-  digitalWrite(IN3,LOW);
-  digitalWrite(IN4,HIGH);
-}
-
-void Right(void)   
-{
-  digitalWrite(IN1,HIGH);
-  digitalWrite(IN2,LOW);
-  digitalWrite(IN3,LOW);
-  digitalWrite(IN4,LOW);
-}
-
-void Left(void)   
-{
-  digitalWrite(IN1,LOW);
-  digitalWrite(IN2,LOW);
-  digitalWrite(IN3,HIGH);
-  digitalWrite(IN4,LOW);
-}
-
-/*************************************************END*****************************************************/
-
-/**********************************************Ultrasonic*************************************************/
-int Ultrasonic()
-{
-   digitalWrite(Trig, LOW);
-  delayMicroseconds(2);
-  digitalWrite(Trig, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(Trig, LOW);
-
-const unsigned long  duration = pulseIn(Echo, HIGH);
-int distance= duration/29/2;
- if(duration==0){
-   Serial.println("Warning: no pulse from sensor");
-   } 
-  else{
-      Serial.print("Distance to nearest object:");
-      Serial.print(distance);
-      Serial.println(" cm");
-  } 
-  return distance;
-}
-/************************************************END******************************************************/
-
-void loop() {
-int distance= Ultrasonic();
-
-if (Firebase.getString(Motor, "/Control/Switch"))
-   { 
-    Serial.print("ON/OFF  :  ");
-    Serial.println(Motor.stringData());
-    if (Motor.stringData() == "1") 
-       {
-        digitalWrite(Switch, HIGH);
-        if (distance >= 10)
-            { 
-        if (Firebase.getString(Motor, "/Control/Motors"))
-           {
-            Serial.print("Motors  :  ");
-            Serial.println(Motor.stringData());
-            if (Motor.stringData() == "0") 
-               {
-                Stop();
-               }
-            else if (Motor.stringData() == "1")
-                    {
-                     Forward();
-                    }
-            else if (Motor.stringData() == "2")
-                    {
-                     Right();
-                    }
-            else if (Motor.stringData() == "3")
-                    {
-                     Backward();
-                    } 
-            else if (Motor.stringData() == "4")
-                    {
-                     Left();  
-                    }
-           }
-        else
-            {
-             Serial.println("FAILED");
-             Serial.println("REASON: " + Motor.errorReason());
-             Serial.println("------------------------------------");
-             Serial.println();
-            } 
-            }     
-       else if (distance < 10)
-               {
-                Stop();
-               }
-       }
-    else if (Motor.stringData() == "0")
-          {
-           digitalWrite(Switch, LOW);
-           Stop();
-          } 
-        
-   }
-    
-else
-   {
-    Serial.println("FAILED");
-    Serial.println("REASON: " + Motor.errorReason());
+  if (Firebase.setFloat(firebaseData, "/FirebaseIOT/temperature", t))
+  {
+    Serial.println("PASSED");
+    Serial.println("PATH: " + firebaseData.dataPath());
+    Serial.println("TYPE: " + firebaseData.dataType());
+    Serial.println("ETag: " + firebaseData.ETag());
     Serial.println("------------------------------------");
     Serial.println();
-    digitalWrite(Switch, LOW);
-    Stop();
+  }
+  else
+  {
+    Serial.println("FAILED");
+    Serial.println("REASON: " + firebaseData.errorReason());
+    Serial.println("------------------------------------");
+    Serial.println();
+  }
+
+ if (Firebase.setFloat(firebaseData, "/FirebaseIOT/humidity", h))
+  {
+    Serial.println("PASSED");
+    Serial.println("PATH: " + firebaseData.dataPath());
+    Serial.println("TYPE: " + firebaseData.dataType());
+    Serial.println("ETag: " + firebaseData.ETag());
+    Serial.println("------------------------------------");
+    Serial.println();
+  }
+  else
+  {
+    Serial.println("FAILED");
+    Serial.println("REASON: " + firebaseData.errorReason());
+    Serial.println("------------------------------------");
+    Serial.println();
+  }
+   // Air acceleration
+  if (Firebase.setFloat(firebaseData, "/FirebaseIOT/air_acceleration", air))
+  {
+    Serial.println("PASSED");
+    Serial.println("PATH: " + firebaseData.dataPath());
+    Serial.println("TYPE: " + firebaseData.dataType());
+    Serial.println("ETag: " + firebaseData.ETag());
+    Serial.println("------------------------------------");
+    Serial.println();
+  }
+  else
+  {
+    Serial.println("FAILED");
+    Serial.println("REASON: " + firebaseData.errorReason());
+    Serial.println("------------------------------------");
+    Serial.println();
+  }
+
+}
+void loop() {
+  sensorUpdate();
+  
+  if (Firebase.getString(ACTVData, "/AC-Data/AC")){
+    Serial.print("ON/OFF:  ");
+    Serial.println(ACTVData.stringData());
+   /* if (ACTVData.stringData() == "1") {
+    digitalWrite(AC, HIGH);
     }
-delay(100);    
+  else if (ACTVData.stringData() == "0"){
+    digitalWrite(AC, LOW);
+    }*/
+  }
+
+ if (Firebase.getString(ACTVData, "/AC-Data/AC-Temp-Value")){
+     Serial.print("Temper:  ");
+    Serial.println(ACTVData.stringData()); 
+  }
+
+  if (Firebase.getString(ACTVData, "/Fan-Speed/fs")){
+     Serial.print("Fan   :  ");
+    Serial.println(ACTVData.stringData()); 
+  }
+
+   if (Firebase.getString(ACTVData, "/Mode/m")){
+     Serial.print("Mode  :  ");
+    Serial.println(ACTVData.stringData()); 
+  }
+  
+ delay(100);
 }
