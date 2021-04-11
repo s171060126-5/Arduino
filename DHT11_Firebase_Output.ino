@@ -1,3 +1,7 @@
+/* WELCOM MY NAME IS OSAMAH I HOPE THAT YOU ARE ENJOYING WITH the CODE FOR MORE INFORMATION SEND ME AN EMAIL
+ EMAIL: OSAMAHAHMED1997@GMAIL.COM
+ YOUTUBE:https://www.youtube.com/channel/UCkmoJWNZU3krOVC3Wu4CrTg?view_as=subscriber
+*/
 //FirebaseESP8266.h must be included before ESP8266WiFi.h
 #include "FirebaseESP8266.h"  // Install Firebase ESP8266 library
 #include <ESP8266WiFi.h>
